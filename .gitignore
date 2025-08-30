@@ -1,0 +1,52 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.so
+
+# --- Poetry / venv ---
+.venv/
+venv/
+env/
+.python-version
+# poetry.lock коммитим!
+
+# --- Testing / tools ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+coverage.xml
+htmlcov/
+
+# --- Build / packaging ---
+build/
+dist/
+*.egg-info/
+*.spec
+
+# --- Logs / temp ---
+*.log
+*.tmp
+*.temp
+
+# --- OS / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+
+# --- Jupyter (на всякий) ---
+.ipynb_checkpoints/
+
+# --- Project-specific outputs ---
+codebase.txt
+codebase*.index.json
+*.index.json
+collector_profile.json
+
+# --- Misc common noise in repos you might scan ---
+node_modules/
+.cache/
