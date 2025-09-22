@@ -17,6 +17,7 @@ import sys
 import json
 from pathlib import Path
 from typing import Iterable, Tuple, Set, Dict, Any, Optional
+from tokenize import open as py_open
 
 try:
     from pathspec import PathSpec
@@ -53,6 +54,29 @@ COMMON_CODE_EXT = {
 }
 
 HEADER_LINE = "=" * 80
+
+def read_text_smart(path: Path) -> tuple[str, str]:
+    """Читает файл в подходящей кодировке. Возвращает (text, encoding)."""
+    # 1) Python-файлы: уважать PEP 263
+    if path.suffix.lower() == ".py":
+        with py_open(str(path)) as fh:
+            return fh.read(), "pep263"
+
+    # 2) Попытаться через набор типичных кодировок
+    encodings = ("utf-8", "utf-8-sig", "cp1251", "koi8-r", "cp866", "latin-1")
+    last_err = None
+    for enc in encodings:
+        try:
+            return path.read_text(encoding=enc), enc
+        except UnicodeDecodeError as e:
+            last_err = e
+            continue
+    # Если уж совсем беда — пробуем без указания (системная локаль)
+    try:
+        return path.read_text(), "locale"
+    except Exception as e:
+        # Пробрасываем исходную UnicodeDecodeError, если она была
+        raise last_err or e
 
 def is_probably_text(path: Path, max_check_bytes: int = 4096) -> bool:
     """Простая эвристика: файл без NUL-байтов и хорошо декодируется в UTF-8."""
@@ -218,7 +242,7 @@ def collect_files(
 
                 # Читаем
                 try:
-                    content = fpath.read_text(encoding="utf-8", errors="replace")
+                    content, _used_enc = read_text_smart(fpath)
                 except Exception as e:
                     if show_skipped:
                         print(f"SKIP  {rel}  -> read error: {e}")
@@ -285,6 +309,60 @@ def collect_files(
             print(f"Не удалось записать индекс {index_json}: {e}", file=sys.stderr)
 
     return files_collected, bytes_written, stats
+
+def dump_tree(root: Path,
+              include_ext: Set[str] | None,
+              extra_skip_dirs: Set[str],
+              exclude_globs: Set[str] | None,
+              use_gitignore: bool,
+              file: Path) -> None:
+    """
+    Сохраняет текстовое дерево каталогов/файлов в UTF-8.
+    """
+    from fnmatch import fnmatch
+    skip_dirs = set(DEFAULT_SKIP_DIRS)
+    skip_dirs.update(extra_skip_dirs)
+    gitignore_spec = _load_gitignore(root) if use_gitignore else None
+
+    lines: list[str] = [f"{root.name}/"]
+    prefix_stack: list[str] = []
+
+    def allowed_file(p: Path) -> bool:
+        rel_posix = p.relative_to(root).as_posix()
+        if _matches_gitignore(gitignore_spec, root, p.relative_to(root)):
+            return False
+        if exclude_globs and any(fnmatch(rel_posix, pat) for pat in exclude_globs):
+            return False
+        if include_ext:
+            return (p.suffix in include_ext) or (p.suffix.lower() in include_ext)
+        return True
+
+    for dirpath, dirnames, filenames in os.walk(root):
+        # фильтрация каталогов
+        dirnames[:] = sorted([d for d in dirnames if not should_skip_dir(d, skip_dirs)])
+        dirnames[:] = [d for d in dirnames 
+                       if not _matches_gitignore(gitignore_spec, root, (Path(dirpath)/d).relative_to(root))]
+        dirnames[:] = [d for d in dirnames 
+                       if not (exclude_globs and any(fnmatch((Path(dirpath)/d).relative_to(root).as_posix(), pat) 
+                                                     for pat in exclude_globs))]
+
+        rel = Path(dirpath).relative_to(root)
+        depth = 0 if rel == Path(".") else len(rel.parts)
+        # гарантировать, что есть строки для текущей директории
+        if rel != Path("."):
+            # формируем префикс для веток
+            prefix = "│   " * (depth - 1) + "├── "
+            lines.append(f"{prefix}{rel.name}/")
+
+        # файлы
+        for i, fname in enumerate(sorted(filenames)):
+            p = Path(dirpath) / fname
+            if not allowed_file(p):
+                continue
+            prefix = "│   " * (len(p.relative_to(root).parents) - 1) + "└── "
+            lines.append(f"{prefix}{fname}")
+
+    Path(file).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 def main():
     ap = argparse.ArgumentParser(description="Собрать кодовую базу в один текстовый файл.")

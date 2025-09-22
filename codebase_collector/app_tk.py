@@ -10,6 +10,7 @@ import json
 import webbrowser
 import platform
 import subprocess
+import os
 
 try:
     from codebase_collector import collect_codebase as core
@@ -132,7 +133,7 @@ class App(tk.Tk):
         self.exclude_globs = tk.StringVar(value="")
         self.use_gitignore = tk.BooleanVar(value=True)
         self.markdown = tk.BooleanVar(value=False)
-        self.index_json = tk.BooleanVar(value=True)
+        self.index_json = tk.BooleanVar(value=False)
 
         self.cancel_flag = CancelFlag()
         self.running = False
@@ -197,12 +198,19 @@ class App(tk.Tk):
         self.profile_save_btn.pack(side=tk.RIGHT)
         self.profile_load_btn = ttk.Button(btns, text="Загрузить профиль…", command=self.load_profile)
         self.profile_load_btn.pack(side=tk.RIGHT, padx=6)
+        self.save_tree_btn = ttk.Button(btns, text="Сохранить архитектуру", command=self.save_tree, width=22)
+        self.save_tree_btn.pack(side=tk.LEFT, padx=6)
 
         logbox = ttk.LabelFrame(frm, text="Лог")
         logbox.pack(fill=tk.BOTH, expand=True, **pad)
         self.log = tk.Text(logbox, height=18)
         self.log.pack(fill=tk.BOTH, expand=True)
         self.log.insert(tk.END, "Готов.\n")
+
+        tools = ttk.Frame(logbox); tools.pack(fill=tk.X)
+        ttk.Button(tools, text="Копировать лог", command=self.copy_log).pack(side=tk.LEFT, padx=4, pady=4)
+        ttk.Button(tools, text="Сохранить лог…", command=self.save_log).pack(side=tk.LEFT, padx=4, pady=4)
+
 
         status = ttk.Frame(self); status.pack(fill=tk.X, side=tk.BOTTOM)
         self.status_var = tk.StringVar(value="")
@@ -239,6 +247,21 @@ class App(tk.Tk):
             webbrowser.open(p.as_uri())
         else:
             messagebox.showinfo("Файл результата", f"Файл пока не найден: {p}")
+
+    def copy_log(self):
+        text = self.log.get("1.0", "end-1c")
+        self.clipboard_clear()
+        self.clipboard_append(text)
+        self.status_var.set("Лог скопирован в буфер обмена.")
+
+    def save_log(self):
+        f = filedialog.asksaveasfilename(defaultextension=".txt",
+                                        filetypes=[("Text", "*.txt"), ("All files", "*.*")],
+                                        initialfile="collector_log.txt")
+        if not f: 
+            return
+        Path(f).write_text(self.log.get("1.0", "end-1c"), encoding="utf-8")
+        messagebox.showinfo("Лог", "Лог сохранён.")
 
     def _parse_include_ext_var(self) -> set[str]:
         raw = self.include_ext.get().strip()
@@ -359,6 +382,31 @@ class App(tk.Tk):
         self.status_var.set("Готово." if "Ошибка" not in log_text else "Ошибка. Смотри лог.")
         if "Готово:" in log_text:
             messagebox.showinfo("Готово", "Операция завершена.")
+
+    def save_tree(self):
+        if not self._validate_paths():
+            return
+        root = Path(self.src_dir.get())
+        out = filedialog.asksaveasfilename(defaultextension=".txt",
+                                        filetypes=[("Text", "*.txt"), ("All files", "*.*")],
+                                        initialfile="project_tree.txt",
+                                        initialdir=str(Path(self.out_file.get()).parent))
+        if not out:
+            return
+        include_ext = core.parse_ext_list(self.include_ext.get()) or None
+        extra_skip_dirs = {d.strip() for d in self.extra_skip_dirs.get().split(",") if d.strip()}
+        exclude_globs = {g.strip() for g in self.exclude_globs.get().split(",") if g.strip()}
+        use_gitignore = self.use_gitignore.get()
+        try:
+            core.dump_tree(root=root,
+                        include_ext=include_ext,
+                        extra_skip_dirs=extra_skip_dirs,
+                        exclude_globs=exclude_globs,
+                        use_gitignore=use_gitignore,
+                        file=Path(out))
+            messagebox.showinfo("Архитектура", f"Структура проекта сохранена в:\n{out}")
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось сохранить дерево: {e}")
 
     def save_profile(self):
         f = filedialog.asksaveasfilename(defaultextension=".json",
