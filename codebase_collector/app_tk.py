@@ -260,7 +260,7 @@ class App(tk.Tk):
                                         initialfile="collector_log.txt")
         if not f: 
             return
-        Path(f).write_text(self.log.get("1.0", "end-1c"), encoding="utf-8")
+        Path(f).write_text(self.log.get("1.0", "end-1c"), encoding="utf-8-sig")
         messagebox.showinfo("Лог", "Лог сохранён.")
 
     def _parse_include_ext_var(self) -> set[str]:

@@ -196,7 +196,7 @@ def collect_files(
     if preview:
         out_stream = None
     else:
-        out_stream = out_file.open("w", encoding="utf-8", newline="\n")
+        out_stream = out_file.open("w", encoding="utf-8-sig", newline="\n")
 
     try:
         for dirpath, dirnames, filenames in os.walk(root):
@@ -362,7 +362,7 @@ def dump_tree(root: Path,
             prefix = "│   " * (len(p.relative_to(root).parents) - 1) + "└── "
             lines.append(f"{prefix}{fname}")
 
-    Path(file).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    Path(file).write_text("\n".join(lines) + "\n", encoding="utf-8-sig")
 
 def main():
     ap = argparse.ArgumentParser(description="Собрать кодовую базу в один текстовый файл.")
