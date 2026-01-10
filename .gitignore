@@ -4,6 +4,7 @@ __pycache__/
 *.pyd
 *.pyo
 *.so
+*.lock
 
 # --- Poetry / venv ---
 .venv/

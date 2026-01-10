@@ -1,22 +1,28 @@
 [tool.poetry]
 name = "codebase-collector"
 version = "0.1.0"
-description = "GUI-утилита для сборки кодовой базы в один файл (Tkinter + PyInstaller)"
-authors = ["You <you@example.com>"]
+description = "Инструмент для сбора и структурирования данных о проекте"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
 readme = "README.md"
-packages = [{ include = "codebase_collector" }]
+
+# Указываем структуру проекта с использованием src/app
+packages = [
+    { include = "app", from = "src" }
+]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
+python = "^3.10"
+appdirs = "^1.4.4"
+# Pathspec теперь встанет без проблем, так как новый Black с ним дружит
 pathspec = "^0.12.1"
+tiktoken = "^0.12.0"
+customtkinter = "^5.2.2"
 
 [tool.poetry.group.dev.dependencies]
-# Ограничиваем сам PyInstaller по версиям Python, чтобы не ругался резолвер
-pyinstaller = { version = "^6.11.0", python = ">=3.8,<3.14" }
-
-[tool.poetry.scripts]
-codebase-collector = "codebase_collector.app:main"
+pytest = "^8.0.0"   # Обновил до свежей версии
+black = "^24.1.0"   # Обновил до стабильной версии (решает конфликт)
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
