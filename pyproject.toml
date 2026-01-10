@@ -12,7 +12,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10,<3.15"
 appdirs = "^1.4.4"
 # Pathspec теперь встанет без проблем, так как новый Black с ним дружит
 pathspec = "^0.12.1"
@@ -22,6 +22,7 @@ customtkinter = "^5.2.2"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"   # Обновил до свежей версии
 black = "^24.1.0"   # Обновил до стабильной версии (решает конфликт)
+pyinstaller = "^6.17.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

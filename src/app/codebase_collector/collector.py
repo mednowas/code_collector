@@ -24,8 +24,7 @@ def count_tokens(text):
         # cl100k_base - кодировщик для GPT-4 и GPT-3.5
         enc = tiktoken.get_encoding("cl100k_base")
         return len(enc.encode(text))
-    except ImportError:
-        # Fallback: 1 токен ~ 4 символа
+    except Exception: 
         return len(text) // 4
 
 def get_module_name_from_path(root_project, folder_path):

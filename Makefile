@@ -13,8 +13,8 @@ format:
 	poetry run black src/
 
 # Сборка проекта
-build:
-	poetry build
+build-exe:
+	poetry run pyinstaller --clean collector.spec
 
 # Удаление виртуальной среды
 clean:
