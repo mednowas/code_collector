@@ -9,6 +9,7 @@ from datetime import datetime
 from app.codebase_collector.collector import collect_codebase
 from app.codebase_collector.project_manager import ProjectManager
 from app.ui.extension_dialog import ExtensionDialog
+from app.utils.paths import get_path
 
 # Настройка темы
 ctk.set_appearance_mode("Dark")
@@ -70,6 +71,8 @@ class MainWindow(ctk.CTk):
         self.title("CodeBase Collector v3.0")
         self.geometry("1100x700")
         
+        icon_path = get_path(os.path.join("assets", "icon.ico"))
+        self.iconbitmap(icon_path)
         # Настройка сетки главного окна:
         # col 0: Sidebar (фиксированный), col 1: Content (растягивается)
         self.grid_columnconfigure(0, weight=0) 
